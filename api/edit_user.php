@@ -1,30 +1,25 @@
 <?php
 include_once('../includes/db.php');
 
-// CORS i headeri
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: PUT");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 
-// Proveri da li je zahtev PUT
 if ($_SERVER["REQUEST_METHOD"] === "PUT") {
-    // Čitanje raw JSON podataka iz tela zahteva
     $data = json_decode(file_get_contents("php://input"), true);
 
     if (isset($data['id']) && isset($data['ime']) && isset($data['prezime'])) {
-        $id = intval($data['id']);
-        $ime = $conn->real_escape_string($data['ime']);
-        $prezime = $conn->real_escape_string($data['prezime']);
+        $stmt = $conn->prepare("UPDATE users SET ime = ?, prezime = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $data['ime'], $data['prezime'], $data['id']);
 
-        // SQL upit za izmenu korisnika
-        $sql = "UPDATE users SET ime = '$ime', prezime = '$prezime' WHERE id = $id";
-
-        if ($conn->query($sql) === TRUE) {
+        if ($stmt->execute()) {
             echo json_encode(["success" => true, "message" => "Korisnik uspešno izmenjen."]);
         } else {
-            echo json_encode(["success" => false, "message" => "Greška pri izmeni korisnika: " . $conn->error]);
+            echo json_encode(["success" => false, "message" => "Greška: " . $stmt->error]);
         }
+
+        $stmt->close();
     } else {
         echo json_encode(["success" => false, "message" => "Nedostaju podaci."]);
     }

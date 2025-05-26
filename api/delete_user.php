@@ -6,18 +6,19 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // Očekujemo da ID dolazi iz POST body
     $data = json_decode(file_get_contents("php://input"), true);
 
     if (isset($data['id'])) {
-        $userId = intval($data['id']);
-        $sql = "DELETE FROM users WHERE id = $userId";
+        $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+        $stmt->bind_param("i", $data['id']);
 
-        if ($conn->query($sql) === TRUE) {
+        if ($stmt->execute()) {
             echo json_encode(["success" => true, "message" => "Korisnik obrisan."]);
         } else {
-            echo json_encode(["success" => false, "message" => "Greška pri brisanju."]);
+            echo json_encode(["success" => false, "message" => "Greška: " . $stmt->error]);
         }
+
+        $stmt->close();
     } else {
         echo json_encode(["success" => false, "message" => "ID nije poslat."]);
     }

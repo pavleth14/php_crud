@@ -1,4 +1,3 @@
-
 <?php
 include_once('../includes/db.php');
 
@@ -7,24 +6,22 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Čita sirovi JSON string iz tela zahteva
     $json = file_get_contents("php://input");
-
-    // Pretvara JSON u PHP asocijativni niz
     $data = json_decode($json, true);
 
-    // Hvata podatke iz dekodiranog JSON-a
-    $ime = $data['ime'];
-    $prezime = $data['prezime'];
+    if (isset($data['ime']) && isset($data['prezime'])) {
+        $stmt = $conn->prepare("INSERT INTO users (ime, prezime) VALUES (?, ?)");
+        $stmt->bind_param("ss", $data['ime'], $data['prezime']);
 
-    $sql = "INSERT INTO users (ime, prezime) VALUES ('$ime', '$prezime')";
+        if ($stmt->execute()) {
+            echo json_encode(["success" => true, "message" => "Korisnik dodat."]);
+        } else {
+            echo json_encode(["success" => false, "message" => "Greška: " . $stmt->error]);
+        }
 
-    // $conn->query($sql);
-
-    if ($conn->query($sql) === TRUE) {
-        echo "New record created successfully";
+        $stmt->close();
     } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+        echo json_encode(["success" => false, "message" => "Nedostaju podaci."]);
     }
 }
 $conn->close();
